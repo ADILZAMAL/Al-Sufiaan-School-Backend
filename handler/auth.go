@@ -1,19 +1,17 @@
 package handler
 
 import (
-	"errors"
-	"net/mail"
-	"time"
-
 	"al-sufiaan-school-backend/config"
 	"al-sufiaan-school-backend/database"
 	"al-sufiaan-school-backend/model"
-
-	"gorm.io/gorm"
+	"errors"
+	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // CheckPasswordHash compare password with hash
@@ -22,84 +20,73 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func getUserByEmail(e string) (*model.User, error) {
+func getUserByEmail(email string) (*model.User, error) {
 	db := database.DB
-	insertUser := &model.User{Username: "adil", Email: "adilzamal@gmail.com", Password: "asda", Names: "adil"}
-	db.Create(&insertUser)
 	var user model.User
-	if err := db.Where(&model.User{Email: e}).Find(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+	result := db.Where(&model.User{Email: email}).Find(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) || result.RowsAffected == 0 {
+		return nil, nil
 	}
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	return &user, nil
 }
 
-func getUserByUsername(u string) (*model.User, error) {
-	db := database.DB
-	var user model.User
-	if err := db.Where(&model.User{Username: u}).Find(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
-}
+// func getUserByUsername(u string) (*model.User, error) {
+// 	db := database.DB
+// 	var user model.User
+// 	if err := db.Where(&model.User{Username: u}).Find(&user).Error; err != nil {
+// 		if errors.Is(err, gorm.ErrRecordNotFound) {
+// 			return nil, nil
+// 		}
+// 		return nil, err
+// 	}
+// 	return &user, nil
+// }
 
-func isEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
-}
+// func isEmail(email string) bool {
+// 	_, err := mail.ParseAddress(email)
+// 	return err == nil
+// }
 
-// Login get user and password
+// // Login get user and password
 func Login(c *fiber.Ctx) error {
 	type LoginInput struct {
-		Identity string `json:"identity"`
-		Password string `json:"password"`
-	}
-	type UserData struct {
-		ID       uint   `json:"id"`
-		Username string `json:"username"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+	// type UserData struct {
+	// 	ID       uint   `json:"id"`
+	// 	Username string `json:"username"`
+	// 	Email    string `json:"email"`
+	// 	Password string `json:"password"`
+	// }
 	input := new(LoginInput)
-	var userData UserData
+	// var userData UserData
 
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error on login request", "data": err})
 	}
-	identity := input.Identity
+	email := input.Email
 	pass := input.Password
 	userModel, err := new(model.User), *new(error)
-	if isEmail(identity) {
-		userModel, err = getUserByEmail(identity)
-	} else {
-		userModel, err = getUserByUsername(identity)
-	}
-
+	userModel, err = getUserByEmail(email)
+	fmt.Println(userModel)
 	if userModel == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "error", "message": "User not found", "data": err})
-	} else {
-		userData = UserData{
-			ID:       11231,
-			Username: userModel.Username,
-			Email:    userModel.Email,
-			Password: userModel.Password,
-		}
 	}
 
-	if !CheckPasswordHash(pass, userData.Password) {
+	if !CheckPasswordHash(pass, userModel.Password) {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "error", "message": "Invalid password", "data": nil})
 	}
 
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)
-	claims["username"] = userData.Username
-	claims["user_id"] = userData.ID
+	claims["email"] = userModel.Email
+	claims["id"] = userModel.Id
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
 	t, err := token.SignedString([]byte(config.Config("SECRET")))

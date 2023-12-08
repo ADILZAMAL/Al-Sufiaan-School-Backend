@@ -1,11 +1,15 @@
 package model
 
-// import "gorm.io/gorm"
+import "time"
 
 // User struct
 type User struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Names    string `json:"names"`
+	Id          uint   `gorm:"primary key"`
+	Name        string `gorm:"not null" json:"name"`
+	Email       string `gorm:"unique; not null" json:"email"`
+	Password    string `json:"password"`
+	Designation string `json:"designation"`
+	SchoolId    uint   `gorm:"not null" json:"school_id"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

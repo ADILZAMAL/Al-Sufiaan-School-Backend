@@ -18,10 +18,14 @@ func SetupRoutes(app *fiber.App) {
 	auth := api.Group("/auth")
 	auth.Post("/login", handler.Login)
 
+	//School
+	school := api.Group("/school")
+	school.Post("/onboard", handler.OnboardSchool)
+
 	// User
-	// user := api.Group("/user")
+	user := api.Group("/user")
 	// user.Get("/:id", handler.GetUser)
-	// user.Post("/", handler.CreateUser)
+	user.Post("/", handler.CreateUser)
 	// user.Patch("/:id", middleware.Protected(), handler.UpdateUser)
 	// user.Delete("/:id", middleware.Protected(), handler.DeleteUser)
 
