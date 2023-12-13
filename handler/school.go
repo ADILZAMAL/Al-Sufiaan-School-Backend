@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"al-sufiaan-school-backend/apiType"
 	"al-sufiaan-school-backend/database"
 	"al-sufiaan-school-backend/model"
 
@@ -68,4 +69,21 @@ func OnboardSchool(c *fiber.Ctx) error {
 	// 	return c.SendStatus(fiber.StatusInternalServerError)
 	// }
 
+}
+
+func GetSchool(c *fiber.Ctx) error {
+	school := new(model.School)
+	id := c.Params("id")
+	db := database.DB
+	db.Find(&school, id)
+
+	var response apiType.GetSchoolResponse
+	response.Id = school.Id
+	response.Name = school.Name
+	response.Address = school.Address
+	response.Mobile = school.Mobile
+	response.UdiceNo = school.UdiceNo
+	response.Email = school.Email
+	response.ActiveSession = school.ActiveSession
+	return c.JSON(fiber.Map{"status": "success", "message": "School found", "data": response})
 }

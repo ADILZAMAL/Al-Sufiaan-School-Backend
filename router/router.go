@@ -21,6 +21,12 @@ func SetupRoutes(app *fiber.App) {
 	//School
 	school := api.Group("/school")
 	school.Post("/onboard", handler.OnboardSchool)
+	school.Get("/:id", handler.GetSchool)
+
+	//Class
+	class := api.Group("/class")
+	class.Post("/add", handler.AddClass)
+	class.Get("/", handler.GetAllClass)
 
 	// User
 	user := api.Group("/user")

@@ -30,7 +30,6 @@ func getUserByEmail(email string) (*model.User, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return &user, nil
 }
 
@@ -94,5 +93,13 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.JSON(fiber.Map{"status": "success", "message": "Success login", "data": t})
+	return c.JSON(fiber.Map{
+		"status":      "success",
+		"message":     "Success login",
+		"token":       t,
+		"name":        userModel.Name,
+		"email":       userModel.Email,
+		"designation": userModel.Designation,
+		"school_id":   userModel.SchoolId,
+	})
 }
